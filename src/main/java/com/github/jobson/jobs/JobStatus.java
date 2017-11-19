@@ -35,6 +35,9 @@ public enum JobStatus {
     @JsonProperty("running")
     RUNNING,
 
+    @JsonProperty("aborting")
+    ABORTING,
+
     @JsonProperty("aborted")
     ABORTED,
 

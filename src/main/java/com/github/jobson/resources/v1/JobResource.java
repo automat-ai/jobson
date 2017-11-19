@@ -280,8 +280,14 @@ public final class JobResource {
             throw new WebApplicationException("Job ID cannot be null", 400);
 
         if (jobDAO.jobExists(jobId)) {
-            if (jobManagerActions.tryAbort(jobId)) return;
-            else throw new WebApplicationException("Job cannot be aborted", 400);
+            final boolean abortionRequestAccepted =
+                    jobManagerActions.requestJobAbortion(new UserId(context.getUserPrincipal().getName()), jobId);
+
+            if (abortionRequestAccepted) {
+                return;
+            } else {
+                throw new WebApplicationException("Job cannot be aborted", 400);
+            }
         } else throw new WebApplicationException("Job cannot be found", 400);
     }
 

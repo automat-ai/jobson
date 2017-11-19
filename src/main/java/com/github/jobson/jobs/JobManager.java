@@ -20,6 +20,7 @@
 package com.github.jobson.jobs;
 
 import com.codahale.metrics.health.HealthCheck;
+import com.github.jobson.api.v1.UserId;
 import com.github.jobson.dao.jobs.WritingJobDAO;
 import com.github.jobson.jobs.jobstates.*;
 import com.github.jobson.utils.CancelablePromise;
@@ -32,18 +33,17 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static com.github.jobson.Constants.JOB_MANAGER_JOB_QUEUE_OVERFLOW_HEALTHCHECK;
 import static com.github.jobson.Constants.JOB_MANAGER_MAX_JOB_QUEUE_OVERFLOW_THRESHOLD;
+import static com.github.jobson.Constants.SYSTEM_USER;
 import static com.github.jobson.Helpers.now;
 import static com.github.jobson.Helpers.tryGet;
 import static com.github.jobson.jobs.JobStatus.*;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 public final class JobManager implements JobManagerEvents, JobManagerActions {
 
@@ -51,7 +51,7 @@ public final class JobManager implements JobManagerEvents, JobManagerActions {
 
     private final ConcurrentLinkedQueue<QueuedJob> jobQueue = new ConcurrentLinkedQueue<>();
     private final Map<JobId, ExecutingJob> executingJobs = Collections.synchronizedMap(new HashMap<>());
-    private final Subject<JobEvent> jobEvents = PublishSubject.create();
+    private final Subject<JobEvent> jobEventsSubject = PublishSubject.create();
     private final WritingJobDAO jobDAO;
     private final JobExecutor jobExecutor;
     private final int maxRunningJobs;
@@ -65,7 +65,7 @@ public final class JobManager implements JobManagerEvents, JobManagerActions {
 
 
     public Observable<JobEvent> allJobStatusChanges() {
-        return jobEvents;
+        return jobEventsSubject;
     }
 
     public Optional<Observable<byte[]>> stderrUpdates(JobId jobId) {
@@ -76,7 +76,16 @@ public final class JobManager implements JobManagerEvents, JobManagerActions {
         return tryGet(executingJobs, jobId).map(ExecutingJob::getStdout);
     }
 
-    public boolean tryAbort(JobId jobId) {
+    public boolean requestJobAbortion(UserId requester, JobId jobId) {
+        requireNonNull(requester);
+        requireNonNull(jobId);
+
+        final Optional<ExecutingJob> maybeExecutingJob = tryGet(executingJobs, jobId);
+
+        if (maybeExecutingJob.isPresent() || jobQueue) {
+
+        }
+
         return tryGet(executingJobs, jobId)
                 .map(this::tryCancel)
                 .orElseGet(() -> tryRemoveFromQueue(jobId));
@@ -97,7 +106,7 @@ public final class JobManager implements JobManagerEvents, JobManagerActions {
 
     private void updateJobStatus(JobId jobId, JobStatus jobStatus, String message) {
         jobDAO.addNewJobStatus(jobId, jobStatus, message);
-        jobEvents.onNext(new JobEvent(jobId, jobStatus));
+        jobEventsSubject.onNext(new JobEvent(jobId, jobStatus));
     }
 
     private boolean tryRemoveFromQueue(JobId jobId) {
@@ -130,7 +139,7 @@ public final class JobManager implements JobManagerEvents, JobManagerActions {
 
         jobQueue.add(queuedJob);
 
-        ret.onCancel(() -> tryAbort(persistedJob.getId()));
+        ret.onCancel(() -> requestJobAbortion(SYSTEM_USER, persistedJob.getId()));
 
         updateJobStatus(persistedJob.getId(), SUBMITTED, "Queued by job manager");
 

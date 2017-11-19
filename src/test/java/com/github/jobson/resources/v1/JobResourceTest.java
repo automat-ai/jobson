@@ -25,8 +25,6 @@ import com.github.jobson.HttpStatusCodes;
 import com.github.jobson.TestHelpers;
 import com.github.jobson.api.v1.*;
 import com.github.jobson.dao.jobs.JobOutputDetails;
-import com.github.jobson.jobs.JobOutput;
-import com.github.jobson.specs.JobOutputId;
 import com.github.jobson.utils.BinaryData;
 import com.github.jobson.dao.jobs.JobDAO;
 import com.github.jobson.dao.jobs.JobDetails;
@@ -40,7 +38,6 @@ import com.github.jobson.jobs.JobStatus;
 import com.github.jobson.jobs.JobManagerActions;
 import com.github.jobson.jobs.jobstates.FinalizedJob;
 import com.github.jobson.jobs.jobstates.ValidJobRequest;
-import com.github.jobson.specs.JobExpectedOutput;
 import com.github.jobson.specs.JobSpec;
 import com.github.jobson.specs.JobSpecId;
 import com.github.jobson.utils.CancelablePromise;
@@ -52,6 +49,7 @@ import org.mockito.ArgumentCaptor;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -650,7 +648,7 @@ public final class JobResourceTest {
     @Test(expected = WebApplicationException.class)
     public void testAbortJobThrowsIfJobManagerReturnsFalseForAbort() throws IOException {
         final JobManagerActions jobManager = mock(JobManagerActions.class);
-        when(jobManager.tryAbort(any())).thenReturn(false);
+        when(jobManager.requestJobAbortion(any(), any())).thenReturn(false);
 
         final JobResource jobResource = resourceThatUses(jobManager);
 
@@ -668,16 +666,19 @@ public final class JobResourceTest {
     @Test
     public void testAbortJobCallsAbortJobInTheDAOWithTheID() throws IOException {
         final JobManagerActions jobManager = mock(JobManagerActions.class);
-        when(jobManager.tryAbort(any())).thenReturn(true);
+        when(jobManager.requestJobAbortion(any(), any())).thenReturn(true);
         final JobDAO jobDAO = mock(JobDAO.class);
         when(jobDAO.jobExists(any())).thenReturn(true);
 
         final JobResource jobResource = resourceThatUses(jobManager, jobDAO);
         final JobId jobId = TestHelpers.generateJobId();
 
-        jobResource.abortJob(TestHelpers.generateSecureSecurityContext(), jobId);
+        final SecurityContext sc = TestHelpers.generateSecureSecurityContext();
 
-        verify(jobManager, times(1)).tryAbort(jobId);
+        jobResource.abortJob(sc, jobId);
+
+        verify(jobManager, times(1))
+                .requestJobAbortion(new UserId(sc.getUserPrincipal().getName()), jobId);
     }
 
     private JobResource resourceThatUses(JobManagerActions jobManagerActions, JobDAO jobDAO) {

@@ -19,7 +19,11 @@
 
 package com.github.jobson;
 
+import com.github.jobson.api.v1.UserId;
+
 public final class Constants {
+
+    public static final UserId SYSTEM_USER = new UserId("system");
 
     public static final String WORKSPACE_CONFIG_FILENAME = "config.yml";
     public static final String WORKSPACE_USER_FILENAME = "users";

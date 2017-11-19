@@ -22,9 +22,9 @@ package com.github.jobson.jobs.management;
 import com.codahale.metrics.health.HealthCheck;
 import com.github.jobson.Constants;
 import com.github.jobson.TestHelpers;
+import com.github.jobson.api.v1.UserId;
 import com.github.jobson.jobs.*;
 import com.github.jobson.specs.JobOutputId;
-import com.github.jobson.specs.RawTemplateString;
 import com.github.jobson.dao.jobs.WritingJobDAO;
 import com.github.jobson.jobs.jobstates.FinalizedJob;
 import com.github.jobson.specs.JobExpectedOutput;
@@ -52,11 +52,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.github.jobson.Constants.JOB_MANAGER_JOB_QUEUE_OVERFLOW_HEALTHCHECK;
 import static com.github.jobson.Constants.JOB_MANAGER_MAX_JOB_QUEUE_OVERFLOW_THRESHOLD;
 import static com.github.jobson.TestConstants.DEFAULT_TIMEOUT;
-import static com.github.jobson.TestHelpers.STANDARD_VALID_REQUEST;
-import static com.github.jobson.TestHelpers.generateRandomBytes;
+import static com.github.jobson.TestHelpers.*;
 import static com.github.jobson.jobs.JobStatus.*;
 import static com.github.jobson.utils.BinaryData.wrap;
 import static com.github.jobson.jobs.JobEventListeners.createNullListeners;
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -153,7 +153,7 @@ public final class JobManagerTest {
     @Test
     public void testGetStdoutUpdatesReturnsEmptyForNonExistentJob() {
         final JobManager jobManager = createStandardManager();
-        assertThat(jobManager.stdoutUpdates(TestHelpers.generateJobId())).isNotPresent();
+        assertThat(jobManager.stdoutUpdates(generateJobId())).isNotPresent();
     }
 
     @Test
@@ -212,7 +212,7 @@ public final class JobManagerTest {
     @Test
     public void testGetStderrUpdatesReturnsEmptyForNonExistentJob() {
         final JobManager jobManager = createStandardManager();
-        assertThat(jobManager.stderrUpdates(TestHelpers.generateJobId())).isNotPresent();
+        assertThat(jobManager.stderrUpdates(generateJobId())).isNotPresent();
     }
 
     @Test
@@ -436,14 +436,23 @@ public final class JobManagerTest {
     }
 
 
-    @Test
-    public void testTryAbortReturnsFalseForNonExistentJob() {
+
+    @Test(expected = NullPointerException.class)
+    public void testRequestJobAbortionThrowsNPEIfArgsNull() {
         final JobManager jobManager = createStandardManager();
-        assertThat(jobManager.tryAbort(TestHelpers.generateJobId())).isFalse();
+        jobManager.requestJobAbortion(null, generateJobId());
+        jobManager.requestJobAbortion(generateUserId(), null);
     }
 
     @Test
-    public void testTryAbortReturnsFalseForACompletedJob() throws InterruptedException, ExecutionException, TimeoutException {
+    public void testRequestJobAbortionReturnsFalseIfJobDoesNotExist() {
+        final JobManager jobManager = createStandardManager();
+        assertThat(jobManager.requestJobAbortion(generateUserId(), generateJobId())).isFalse();
+    }
+
+    @Test
+    public void testRequestJobAbortionReturnsFalseForACompletedJob()
+            throws InterruptedException, ExecutionException, TimeoutException {
         final JobManager jobManager = createStandardManager();
 
         final Pair<JobId, CancelablePromise<FinalizedJob>> ret =
@@ -451,23 +460,52 @@ public final class JobManagerTest {
 
         ret.getRight().get(DEFAULT_TIMEOUT, MILLISECONDS);
 
-        assertThat(jobManager.tryAbort(ret.getLeft())).isFalse();
+        final boolean abortRequestResponse =
+                jobManager.requestJobAbortion(generateUserId(), ret.getLeft());
+
+        assertThat(abortRequestResponse).isFalse();
     }
 
     @Test
-    public void testTryAbortReturnsTrueForARunningJob() {
+    public void testRequestJobAbortionReturnsTrueForARunningJob() {
+        final WritingJobDAO writingJobDAO = new MockInMemoryJobWriter();
         final CancelablePromise<JobExecutionResult> executorPromise = new SimpleCancelablePromise<>();
-        final JobManager jobManager =
-                createManagerWith(MockJobExecutor.thatUses(executorPromise));
+        final JobExecutor jobExecutor = MockJobExecutor.thatUses(executorPromise);
+
+        final JobManager jobManager = createManagerWith(writingJobDAO, jobExecutor);
 
         final Pair<JobId, CancelablePromise<FinalizedJob>> ret =
                 jobManager.submit(STANDARD_VALID_REQUEST);
 
-        assertThat(jobManager.tryAbort(ret.getLeft())).isTrue();
+        final boolean abortRequestResponse =
+                jobManager.requestJobAbortion(generateUserId(), ret.getLeft());
 
-        // TODO: Check status is aborted.
+        assertThat(abortRequestResponse).isTrue();
     }
 
+    @Test
+    public void testRequestJobAbortionImmediatelyUpdatesJobStatusToAborting() {
+        final MockInMemoryJobWriter writingJobDAO = new MockInMemoryJobWriter();
+        final CancelablePromise<JobExecutionResult> executorPromise = new SimpleCancelablePromise<>();
+        final JobExecutor jobExecutor = MockJobExecutor.thatUses(executorPromise);
+
+        final JobManager jobManager = createManagerWith(writingJobDAO, jobExecutor);
+
+        final Pair<JobId, CancelablePromise<FinalizedJob>> ret =
+                jobManager.submit(STANDARD_VALID_REQUEST);
+
+        final UserId userId = generateUserId();
+
+        jobManager.requestJobAbortion(userId, ret.getLeft());
+
+        final AddNewJobStatusArgs expectedDAOCall =
+                new AddNewJobStatusArgs(
+                        ret.getLeft(),
+                        JobStatus.ABORTING,
+                        format("Job abortion requested by %s", userId));
+
+        assertThat(writingJobDAO.getAddNewJobStatusCalls()).contains(expectedDAOCall);
+    }
 
     @Test
     public void testSubmitPersistsJobOutputsAfterExecution() throws InterruptedException, ExecutionException, TimeoutException {

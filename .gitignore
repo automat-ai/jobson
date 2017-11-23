@@ -21,3 +21,6 @@ buildNumber.properties
 
 # Emacs
 *~
+
+# docker
+container/tmp/

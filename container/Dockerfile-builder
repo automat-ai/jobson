@@ -1,0 +1,23 @@
+FROM anapsix/alpine-java:8_jdk
+
+ENV LANG=C.UTF-8 \
+    MAVEN_HOME=/usr/share/java/maven-3 \
+    PATH=${PATH}:/usr/share/java/maven-3/bin
+
+RUN apk add --update-cache \
+            --repository http://dl-4.alpinelinux.org/alpine/edge/community/ \
+            --allow-untrusted \
+          maven \
+    && \
+    rm -rf /var/cache/apk/*
+
+
+COPY . /app
+WORKDIR /app
+VOLUME /app/artifact
+
+ENV artifactId=jobson \
+    version=0.0.2
+
+# RUN mvn package && \
+#    cp /app/target/${artifactId}-${version}.jar /app/artifact

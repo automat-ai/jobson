@@ -1,0 +1,50 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: jobson
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  minReadySeconds: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        component: jobson
+    spec:
+      containers:
+      - name: jobson
+        image: hbouvier/jobson:0.0.2-0003
+        ports:
+          - name: http
+            containerPort: 8080
+          - name: admin
+            containerPort: 8081
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: 500m
+            memory: 2Gi
+        volumeMounts:
+        - name: specs
+          mountPath: /app/specs
+        - name: wds
+          mountPath: /app/wds
+        - name: jobs
+          mountPath: /app/jobs
+      volumes:
+      - name: specs
+        hostPath:
+          path: /var/lib/automat/jobson/specs
+      - name: wds
+        hostPath:
+          path: /var/lib/automat/jobson/wds
+      - name: jobs
+        hostPath:
+          path: /var/lib/automat/jobson/jobs

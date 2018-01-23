@@ -1,4 +1,4 @@
-FROM alpine:3.6
+src/main/java/com/github/jobson/scripting/functions/ToCSVFunction.javaFROM alpine:3.6
 
 # Default to UTF-8 file.encoding
 ENV LANG=C.UTF-8 \
@@ -7,7 +7,7 @@ ENV LANG=C.UTF-8 \
     artifactId=jobson \
     version=0.0.2
 
-RUN apk add --no-cache openjdk8-jre bash && \
+RUN apk add --update-cache  --repository http://dl-4.alpinelinux.org/alpine/edge/main/ --allow-untrusted  "nodejs>8" openjdk8-jre bash jq && \
     rm -rf /var/cache/apk/*
 
 COPY container/tmp/artifact/${artifactId}-${version}.jar src/main/bash/jobson /app/

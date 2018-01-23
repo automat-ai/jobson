@@ -25,6 +25,7 @@ import com.github.jobson.jobinputs.JobExpectedInputId;
 import com.github.jobson.jobs.jobstates.PersistedJob;
 import com.github.jobson.scripting.functions.ToFileFunction;
 import com.github.jobson.scripting.functions.ToJSONFunction;
+import com.github.jobson.scripting.functions.ToCSVFunction;
 import com.github.jobson.specs.*;
 import com.github.jobson.utils.BinaryData;
 import com.github.jobson.utils.CancelablePromise;
@@ -57,6 +58,7 @@ public final class LocalJobExecutor implements JobExecutor {
     private static String resolveArg(PersistedJob persistedJob, Path jobWorkingDir, RawTemplateString arg) {
         final Map<String, Object> environment = new HashMap<>();
 
+        environment.put("toCSV", new ToCSVFunction());
         environment.put("toJSON", new ToJSONFunction());
         environment.put("toFile", new ToFileFunction(jobWorkingDir));
         environment.put("request", persistedJob);

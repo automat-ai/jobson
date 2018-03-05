@@ -3,7 +3,6 @@ node {
   try {
 
     stage('Fetching sources') {
-      notifyBuild('STARTED')
       println 'Processing branch => ' + env.BRANCH_Name
       checkout scm
 

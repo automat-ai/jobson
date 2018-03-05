@@ -13,7 +13,10 @@ node {
 
     if (env.BRANCH_NAME == 'master') {
         stage('Generating JAR') {
-          sh "mvn package -DskipTests"
+          withMaven(maven: 'Maven') {
+            // Run the maven build
+            sh "mvn package -DskipTests"
+          }
         }
 
         stage('Publishing to docker') {

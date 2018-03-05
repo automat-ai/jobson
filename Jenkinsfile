@@ -12,12 +12,8 @@ node {
 
     if (env.BRANCH_NAME == 'master') {
         stage('Generating JAR') {
-          maven {
-              goals('package')
-              localRepository(LocalRepositoryLocation.LOCAL_TO_WORKSPACE)
-              properties(skipTests: true)
-              mavenInstallation('Maven')
-          }
+          def mvnHome = tool 'Maven'
+          sh "${mvnHome}/bin/mvn package -DskipTests"
         }
 
         stage('Publishing to docker') {

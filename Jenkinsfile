@@ -1,7 +1,10 @@
 #!groovy
 node {
-  try {
+  tools {
+    maven 'Maven'
+  }
 
+  try {
     stage('Fetching sources') {
       println 'Processing branch => ' + env.BRANCH_Name
       checkout scm
@@ -13,10 +16,7 @@ node {
 
     if (env.BRANCH_NAME == 'master') {
         stage('Generating JAR') {
-          maven {
-            // Run the maven build
-            sh "mvn package -DskipTests"
-          }
+          sh "mvn package -DskipTests"
         }
 
         stage('Publishing to docker') {

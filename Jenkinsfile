@@ -1,9 +1,5 @@
 #!groovy
 node {
-  tools {
-    maven 'Maven'
-  }
-
   try {
     stage('Fetching sources') {
       println 'Processing branch => ' + env.BRANCH_Name
@@ -16,7 +12,12 @@ node {
 
     if (env.BRANCH_NAME == 'master') {
         stage('Generating JAR') {
-          sh "mvn package -DskipTests"
+          maven {
+              goals('package')
+              localRepository(LocalRepositoryLocation.LOCAL_TO_WORKSPACE)
+              properties(skipTests: true)
+              mavenInstallation('Maven')
+          }
         }
 
         stage('Publishing to docker') {

@@ -13,7 +13,7 @@ node {
 
     if (env.BRANCH_NAME == 'master') {
         stage('Generating JAR') {
-          withMaven(maven: 'Maven') {
+          maven {
             // Run the maven build
             sh "mvn package -DskipTests"
           }

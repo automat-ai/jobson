@@ -1,4 +1,4 @@
-src/main/java/com/github/jobson/scripting/functions/ToCSVFunction.javaFROM alpine:3.6
+FROM alpine:3.6
 
 # Default to UTF-8 file.encoding
 ENV LANG=C.UTF-8 \

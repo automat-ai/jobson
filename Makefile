@@ -1,4 +1,4 @@
-container/DockerfileartifactId:=jobson
+artifactId:=jobson
 version:=0.0.2
 NAMESPACE:=${USER}
 
@@ -10,7 +10,7 @@ jobson-builder:
 	docker images | grep jobson-builder 2>&1 > /dev/null || docker build -t jobson-builder -f container/Dockerfile-builder .
 
 package:
-	docker run -tv $(shell pwd)/container/tmp/artifact:/app/artifact -v $(shell pwd)/container/tmp/m2:/root/.m2 jobson-builder /bin/sh -c 'mvn package -DskipTests && cp target/${artifactId}-${version}.jar /app/artifact/'
+	docker run -tv $(shell pwd)/container/tmp/artifact:/app/artifact -v $(shell pwd)/container/tmp/m2:/root/.m2 jobson-builder /bin/sh -c 'mvn package -DskipTests && cp target/${artifactId}-${version}.jar /app/artifact/${artifactId}-${version}.jar'
 
 image:
 	docker build -t jobson -f container/Dockerfile .

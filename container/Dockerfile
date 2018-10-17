@@ -7,12 +7,10 @@ ENV LANG=C.UTF-8 \
     artifactId=jobson \
     version=0.0.2
 
-RUN apk add --update python python2-dev py-pip build-base && \
-    pip install virtualenv && \
-    apk add --update-cache  --repository http://dl-4.alpinelinux.org/alpine/edge/main/ --allow-untrusted  "nodejs>8" openjdk8-jre bash jq && \
+RUN apk add --update-cache  --repository http://dl-4.alpinelinux.org/alpine/edge/main/ --allow-untrusted  "nodejs>8" openjdk8-jre bash jq python python2-dev py-pip build-base && \
     rm -rf /var/cache/apk/*
 
-COPY ./target/jobson-0.0.2.jar src/main/bash/jobson /app/
+COPY ./container/tmp/artifact/jobson-0.0.2.jar src/main/bash/jobson /app/
 RUN chmod a+x /app/jobson
 
 WORKDIR /app

@@ -6,7 +6,7 @@ node {
       checkout scm
 
       gitCommit = sh(returnStdout: true, script: 'git rev-parse --verify HEAD').trim()
-      shortCommit = gitCommit.take(7)
+      shortCommit = gitCommit.take(8)
       println gitCommit
     }
 

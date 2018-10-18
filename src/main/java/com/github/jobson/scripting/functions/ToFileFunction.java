@@ -24,6 +24,7 @@ import com.github.jobson.scripting.FreeFunction;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static java.lang.String.format;
 
@@ -36,24 +37,42 @@ public final class ToFileFunction implements FreeFunction {
         this.workingDir = workingDir;
     }
 
+    private Object toFile(final String fileContent, final Path path) throws IOException {
+        Files.write(path, fileContent.getBytes());
+        return path.toAbsolutePath().toString();
+    }
+
 
     @Override
     public Object call(Object... args) {
-        if (args.length != 1) {
-            throw new RuntimeException(format("asFile called with %s args (expects 1)", args.length));
-        } else if (!(args[0] instanceof String)) {
-            throw new RuntimeException(format(
-                    "asFile called with %s, should be called with a string (try using toJSON?)",
-                    args[0].getClass().getSimpleName()));
-        } else {
-            try {
-                final String fileContent = (String)args[0];
-                final Path path = Files.createTempFile(workingDir, "request", "");
-                Files.write(path, fileContent.getBytes());
-                return path.toAbsolutePath().toString();
-            } catch (IOException ex) {
-                throw new RuntimeException("Could not create an input file.", ex);
+        try {
+            Path path = null;
+            switch (args.length) {
+            case 2:
+                if (!(args[1] instanceof String)) {
+                    throw new RuntimeException(format(
+                            "asFile called with %s, should be called with a string",
+                            args[1].getClass().getSimpleName()));
+                }
+                path = Paths.get((String)args[1]);
+
+            case 1:
+                if (!(args[0] instanceof String)) {
+                    throw new RuntimeException(format(
+                            "asFile called with %s, should be called with a string (try using toJSON?)",
+                            args[0].getClass().getSimpleName()));
+                }
+                if (args.length == 1) {
+                    path = Files.createTempFile(workingDir, "request", "");
+                }
+                return toFile((String)args[0], path);
+
+            case 0:
+            default:
+                throw new RuntimeException(format("asFile called with %s args (expects 1 or 2)", args.length));
             }
+        } catch (IOException ex) {
+            throw new RuntimeException("Could not create an input file.", ex);
         }
-    }
+}
 }

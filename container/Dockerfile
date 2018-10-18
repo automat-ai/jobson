@@ -7,11 +7,16 @@ ENV LANG=C.UTF-8 \
     artifactId=jobson \
     version=0.0.2
 
-RUN apk add --update-cache  --repository http://dl-4.alpinelinux.org/alpine/edge/main/ --allow-untrusted  "nodejs>8" openjdk8-jre bash jq python python2-dev py-pip build-base && \
+RUN apk add --update-cache  --repository http://dl-4.alpinelinux.org/alpine/edge/main/ --allow-untrusted  "nodejs>8" openjdk8-jre bash jq python python2-dev py-pip build-base curl && \
     rm -rf /var/cache/apk/*
 
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && \
+    chmod +x ./kubectl && \
+    mv ./kubectl /usr/local/bin/kubectl
+
 # COPY ./container/tmp/artifact/jobson-0.0.2.jar src/main/bash/jobson /app/
-COPY ./target/jobson-0.0.2.jar src/main/bash/jobson /app/
+# COPY ./target/jobson-0.0.2.jar src/main/bash/jobson /app/
+COPY ./container/tmp/artifact/jobson-0.0.2.jar src/main/bash/jobson /app/
 RUN chmod a+x /app/jobson
 
 WORKDIR /app

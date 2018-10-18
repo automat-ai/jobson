@@ -14,9 +14,9 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s
     chmod +x ./kubectl && \
     mv ./kubectl /usr/local/bin/kubectl
 
-# COPY ./container/tmp/artifact/jobson-0.0.2.jar src/main/bash/jobson /app/
-# COPY ./target/jobson-0.0.2.jar src/main/bash/jobson /app/
-COPY ./container/tmp/artifact/jobson-0.0.2.jar src/main/bash/jobson /app/
+# makefile local => COPY ./container/tmp/artifact/jobson-0.0.2.jar src/main/bash/jobson /app/
+# jenkinsfile => COPY ./target/jobson-0.0.2.jar src/main/bash/jobson /app/
+COPY ./target/jobson-0.0.2.jar src/main/bash/jobson /app/
 RUN chmod a+x /app/jobson
 
 WORKDIR /app

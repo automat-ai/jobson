@@ -11,10 +11,11 @@ node {
     }
 
     if (env.BRANCH_NAME == 'master') {
-        stage('Generating JAR') {
-          def mvnHome = tool 'Maven'
-          sh "${mvnHome}/bin/mvn package -DskipTests"
-        }
+        // NOTE: It is now built into the Dockerfile
+        // stage('Generating JAR') {
+        //   def mvnHome = tool 'Maven'
+        //   sh "${mvnHome}/bin/mvn package -DskipTests"
+        // }
 
         stage('Publishing to docker') {
           withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'private-docker-registry',

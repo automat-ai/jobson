@@ -1,3 +1,27 @@
+FROM anapsix/alpine-java:8_jdk AS build
+
+ENV LANG=C.UTF-8 \
+    MAVEN_HOME=/usr/share/java/maven-3 \
+    PATH=${PATH}:/usr/share/java/maven-3/bin
+
+RUN apk add --update-cache \
+            --repository http://dl-4.alpinelinux.org/alpine/edge/community/ \
+            --allow-untrusted \
+          maven \
+    && \
+    rm -rf /var/cache/apk/*
+
+
+COPY . /app
+WORKDIR /app
+
+ENV artifactId=jobson \
+    version=0.0.2
+
+RUN mvn package -DskipTests
+
+###############################################################################
+
 FROM alpine:3.6
 
 # Default to UTF-8 file.encoding
@@ -14,9 +38,7 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s
     chmod +x ./kubectl && \
     mv ./kubectl /usr/local/bin/kubectl
 
-# makefile local => COPY ./container/tmp/artifact/jobson-0.0.2.jar src/main/bash/jobson /app/
-# jenkinsfile => COPY ./target/jobson-0.0.2.jar src/main/bash/jobson /app/
-COPY ./target/jobson-0.0.2.jar src/main/bash/jobson /app/
+COPY --from=build /app/target/jobson-0.0.2.jar /app/src/main/bash/jobson /app/
 RUN chmod a+x /app/jobson
 
 WORKDIR /app

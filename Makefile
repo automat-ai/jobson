@@ -6,6 +6,9 @@ all: jobson-builder package image
 
 clean: clean-container
 
+build:
+	mvn package -DskipTests
+
 jobson-builder:
 	docker images | grep jobson-builder 2>&1 > /dev/null || docker build -t jobson-builder -f container/Dockerfile-builder .
 

@@ -1,4 +1,4 @@
-FROM alpine:3.6
+FROM alpine:3.8
 
 # Default to UTF-8 file.encoding
 ENV LANG=C.UTF-8 \
@@ -16,10 +16,10 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s
 
 # makefile local => COPY ./container/tmp/artifact/jobson-0.0.2.jar src/main/bash/jobson /app/
 # jenkinsfile => COPY ./target/jobson-0.0.2.jar src/main/bash/jobson /app/
-COPY ./target/jobson-0.0.2.jar src/main/bash/jobson /app/
+COPY config.yml ./target/jobson-0.0.2.jar src/main/bash/jobson /app/
 RUN chmod a+x /app/jobson
 
 WORKDIR /app
 EXPOSE 8080 8081
-VOLUME /app/jobs /app/specs /app/wds
+# VOLUME /app/jobs /app/specs /app/wds
 CMD /app/jobson new && /app/jobson serve config.yml

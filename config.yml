@@ -1,0 +1,32 @@
+specs:
+  dir: specs
+
+jobs:
+  dir: data/jobs
+
+workingDirs:
+  dir: data/wds
+
+users:
+  file: users
+
+authentication:
+  # Options: guest, basic, custom
+  type: guest
+
+server:
+  applicationConnectors:
+    - type: http
+      port: 8082
+  adminConnectors:
+    - type: http
+      port: 8081
+
+logging:
+  level: INFO
+  appenders:
+    - type: console
+      threshold: ALL
+      timeZone: UTC
+      target: stdout
+      logFormat: "%d{yy/MM/dd HH:mm:ss} %-5p %c: %m%n"
